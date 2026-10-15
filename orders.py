@@ -8,48 +8,59 @@ TAX = 0.15
 def process_order(token, items, coupon=None, shipping="standard", log=None):
     if log is None:
         log = []
-    
+
     username = auth.sessions.get(token)
-    if username != None:
-        if items == []:
-            print("Empty order")
-            return None
-        total = 0
-        for item in items:
-            book = database.get_book(item["book_id"])
-            if book:
-                if book[3] >= item["qty"]:
-                    if item["qty"] > 0:
-                        total = total + book[2] * item["qty"]
-                        database.update_stock(book[0], book[3] - item["qty"])
-                    else:
-                        print("Invalid quantity")
-                else:
-                    if book[3] > 0:
-                        print("Only " + str(book[3]) + " units available for " + book[1])
-                    else:
-                        print("Book out of stock: " + book[1])
-            else:
-                print("Book not found")
-        if coupon:
-            if coupon == "WELCOME10":
-                total = total * 0.9
-            elif coupon == "BLACKFRIDAY":
-                total = total * 0.5
-            elif coupon == "STAFF":
-                total = total * 0.7
-        if shipping == "express":
-            total = total + 10
-        elif shipping == "standard":
-            total = total + 3
-        total = total + total * TAX
-        order_id = len(log) + 1
-        database.save_order(order_id, username, total, "PENDING")
-        log.append(order_id)
-        return round(total, 2)
-    else:
+    if username is None:
         print("Invalid session")
         return None
+
+    if not items:
+        print("Empty order")
+        return None
+
+    discounts = {
+        "WELCOME10": 0.9,
+        "BLACKFRIDAY": 0.5,
+        "STAFF": 0.7,
+    }
+    shipping_costs = {
+        "express": 10,
+        "standard": 3,
+    }
+
+    total = 0
+    for item in items:
+        book = database.get_book(item["book_id"])
+        if book is None:
+            print("Book not found")
+            continue
+
+        qty = item["qty"]
+        stock = book[3]
+        if qty <= 0:
+            print("Invalid quantity")
+            continue
+
+        if stock < qty:
+            if stock > 0:
+                print("Only " + str(stock) + " units available for " + book[1])
+            else:
+                print("Book out of stock: " + book[1])
+            continue
+
+        total += book[2] * qty
+        database.update_stock(book[0], stock - qty)
+
+    if coupon in discounts:
+        total *= discounts[coupon]
+
+    total += shipping_costs.get(shipping, 0)
+    total += total * TAX
+
+    order_id = len(log) + 1
+    database.save_order(order_id, username, total, "PENDING")
+    log.append(order_id)
+    return round(total, 2)
 
 
 def print_invoice(username, items):
