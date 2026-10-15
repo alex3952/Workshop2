@@ -1,7 +1,7 @@
 """Order processing logic."""
 import database
 import auth
-
+SEPARATOR = "=============================="
 TAX = 0.15
 
 
@@ -50,10 +50,10 @@ def process_order(token, items, coupon=None, shipping="standard", log=[]):
 
 
 def print_invoice(username, items):
-    print("==============================")
+    print(SEPARATOR)
     print("BOOKSTORE INVOICE")
     print("Customer: " + username)
-    print("==============================")
+    print(SEPARATOR)
     subtotal = 0
     for item in items:
         book = database.get_book(item["book_id"])
@@ -64,14 +64,14 @@ def print_invoice(username, items):
     print("Subtotal: " + str(round(subtotal, 2)))
     print("Tax: " + str(round(tax, 2)))
     print("Total: " + str(round(subtotal + tax, 2)))
-    print("==============================")
+    print(SEPARATOR)
 
 
 def print_quote(username, items):
-    print("==============================")
+    print(SEPARATOR)
     print("BOOKSTORE QUOTE")
     print("Customer: " + username)
-    print("==============================")
+    print(SEPARATOR)
     subtotal = 0
     for item in items:
         book = database.get_book(item["book_id"])
@@ -83,7 +83,7 @@ def print_quote(username, items):
     print("Tax: " + str(round(tax, 2)))
     print("Total: " + str(round(subtotal + tax, 2)))
     print("This quote is valid for 7 days.")
-    print("==============================")
+    print(SEPARATOR)
 
 
 def cancel_order(order_id):
